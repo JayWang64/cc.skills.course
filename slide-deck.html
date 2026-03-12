@@ -1,0 +1,1488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Build Your First Claude Skill</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #FFFFFF;
+  --text: #1a1a2e;
+  --text-secondary: #6b7280;
+  --accent: #6366f1;
+  --accent-light: #e0e7ff;
+  --success: #10b981;
+  --success-light: #d1fae5;
+  --warning: #ef4444;
+  --warning-light: #fee2e2;
+  --card-bg: #f8fafc;
+  --border: #e5e7eb;
+  --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+  --shadow-lg: 0 4px 14px rgba(0,0,0,0.1);
+}
+
+html { font-size: 16px; }
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+}
+
+/* Progress bar */
+.progress-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 3px;
+  background: var(--accent);
+  transition: width 0.4s ease;
+  z-index: 1000;
+}
+
+/* Slide container */
+.deck {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+}
+
+.slide {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 4rem 6rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+  overflow-y: auto;
+}
+
+.slide.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Slide type: title */
+.slide--title {
+  text-align: center;
+  align-items: center;
+}
+
+.slide--title h1 {
+  font-size: 3rem;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  margin-bottom: 1rem;
+}
+
+.slide--title .subtitle {
+  font-size: 1.35rem;
+  color: var(--text-secondary);
+  max-width: 600px;
+}
+
+/* Slide type: content */
+.slide--content h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  letter-spacing: -0.01em;
+}
+
+.slide--content p,
+.slide--content li {
+  font-size: 1.15rem;
+  line-height: 1.7;
+  color: var(--text);
+}
+
+.slide--content ul, .slide--content ol {
+  padding-left: 1.5rem;
+  margin-top: 0.75rem;
+}
+
+.slide--content li {
+  margin-bottom: 0.5rem;
+}
+
+.slide--content li::marker {
+  color: var(--accent);
+}
+
+/* Slide type: comparison */
+.slide--comparison h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+}
+
+.comparison-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+
+.comparison-col {
+  border-radius: 12px;
+  padding: 1.75rem;
+}
+
+.comparison-col.bad {
+  background: var(--warning-light);
+  border: 1px solid #fca5a5;
+}
+
+.comparison-col.good {
+  background: var(--success-light);
+  border: 1px solid #6ee7b7;
+}
+
+.comparison-col h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 1rem;
+}
+
+.comparison-col.bad h3 { color: var(--warning); }
+.comparison-col.good h3 { color: var(--success); }
+
+.comparison-col code, .comparison-col pre {
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+/* Slide type: cards */
+.slide--cards h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+}
+
+.card-row {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.card {
+  flex: 1;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.75rem;
+  box-shadow: var(--shadow);
+}
+
+.card .card-icon {
+  font-size: 2rem;
+  margin-bottom: 0.75rem;
+  display: block;
+}
+
+.card h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.card p {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+/* Slide type: exercise */
+.slide--exercise {
+  border-left: 5px solid var(--accent);
+  background: linear-gradient(135deg, #f5f3ff 0%, #ffffff 50%);
+}
+
+.slide--exercise .exercise-label {
+  display: inline-block;
+  background: var(--accent);
+  color: white;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.3rem 0.9rem;
+  border-radius: 20px;
+  margin-bottom: 1.25rem;
+}
+
+.slide--exercise h2 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin-bottom: 1.25rem;
+}
+
+.slide--exercise p,
+.slide--exercise li {
+  font-size: 1.1rem;
+  line-height: 1.7;
+}
+
+/* Section label */
+.section-label {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+  margin-bottom: 0.75rem;
+}
+
+/* Code blocks */
+pre {
+  background: #1e1e2e;
+  color: #cdd6f4;
+  border-radius: 10px;
+  padding: 1.25rem 1.5rem;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  font-size: 0.9rem;
+  line-height: 1.7;
+  overflow-x: auto;
+  margin: 1rem 0;
+}
+
+code {
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  background: var(--accent-light);
+  color: var(--accent);
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+pre code {
+  background: none;
+  color: inherit;
+  padding: 0;
+}
+
+/* Keyword highlights in code */
+.kw { color: #cba6f7; }
+.str { color: #a6e3a1; }
+.cm { color: #6c7086; font-style: italic; }
+
+/* Callout box */
+.callout {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 10px;
+  padding: 1.25rem 1.5rem;
+  margin: 1rem 0;
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.callout strong {
+  color: #b45309;
+}
+
+/* Glossary inline */
+.gloss {
+  color: var(--text-secondary);
+  font-style: italic;
+  font-size: 0.9em;
+}
+
+/* Tree diagram */
+.tree {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.5rem 2rem;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 1rem;
+  line-height: 2;
+  margin: 1rem 0;
+}
+
+.tree .folder { color: var(--accent); font-weight: 600; }
+.tree .file { color: var(--text); }
+.tree .required { color: var(--warning); font-weight: 600; }
+.tree .optional { color: var(--text-secondary); }
+
+/* Checklist */
+.checklist {
+  list-style: none;
+  padding-left: 0;
+}
+
+.checklist li {
+  position: relative;
+  padding-left: 2rem;
+  margin-bottom: 0.75rem;
+  font-size: 1.15rem;
+}
+
+.checklist li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.35rem;
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 4px;
+  border: 2px solid var(--border);
+  background: var(--bg);
+}
+
+.checklist li.checked::before {
+  background: var(--success);
+  border-color: var(--success);
+}
+
+.checklist li.checked::after {
+  content: '';
+  position: absolute;
+  left: 0.25rem;
+  top: 0.45rem;
+  width: 0.6rem;
+  height: 0.35rem;
+  border-left: 2px solid white;
+  border-bottom: 2px solid white;
+  transform: rotate(-45deg);
+}
+
+/* Animated checkmarks for final slide */
+.slide.active .checklist li.checked {
+  animation: checkIn 0.4s ease forwards;
+}
+
+.slide.active .checklist li:nth-child(1) { animation-delay: 0.1s; }
+.slide.active .checklist li:nth-child(2) { animation-delay: 0.25s; }
+.slide.active .checklist li:nth-child(3) { animation-delay: 0.4s; }
+.slide.active .checklist li:nth-child(4) { animation-delay: 0.55s; }
+.slide.active .checklist li:nth-child(5) { animation-delay: 0.7s; }
+.slide.active .checklist li:nth-child(6) { animation-delay: 0.85s; }
+
+@keyframes checkIn {
+  0% { opacity: 0; transform: translateX(-10px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+/* Two-column layout */
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2.5rem;
+  margin-top: 1rem;
+}
+
+.two-col > div h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+  color: var(--accent);
+}
+
+/* Three-level visual */
+.levels {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-top: 1rem;
+}
+
+.level {
+  border: 1px solid var(--border);
+  padding: 1.25rem 1.5rem;
+  position: relative;
+}
+
+.level:first-child { border-radius: 12px 12px 0 0; }
+.level:last-child { border-radius: 0 0 12px 12px; }
+
+.level .level-tag {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.2rem 0.6rem;
+  border-radius: 10px;
+  margin-right: 0.75rem;
+}
+
+.level:nth-child(1) { background: #fef3c7; }
+.level:nth-child(1) .level-tag { background: #f59e0b; color: white; }
+.level:nth-child(2) { background: #dbeafe; }
+.level:nth-child(2) .level-tag { background: #3b82f6; color: white; }
+.level:nth-child(3) { background: #f3e8ff; }
+.level:nth-child(3) .level-tag { background: #8b5cf6; color: white; }
+
+/* Formula visual */
+.formula {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin: 1.5rem 0;
+}
+
+.formula .part {
+  background: var(--accent-light);
+  color: var(--accent);
+  font-weight: 600;
+  padding: 0.75rem 1.25rem;
+  border-radius: 10px;
+  font-size: 1.1rem;
+}
+
+.formula .plus {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+/* Pattern mini-diagrams */
+.pattern-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  margin-top: 1rem;
+}
+
+.pattern-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.25rem;
+}
+
+.pattern-card h3 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin-bottom: 0.4rem;
+}
+
+.pattern-card p {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.pattern-card .mini-flow {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.pattern-card .mini-flow .arrow {
+  color: var(--text-secondary);
+}
+
+/* Navigation */
+.nav {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  display: flex;
+  gap: 0.75rem;
+  z-index: 100;
+}
+
+.nav button {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow);
+  transition: all 0.2s ease;
+}
+
+.nav button:hover {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+  box-shadow: var(--shadow-lg);
+}
+
+.nav button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.nav button:disabled:hover {
+  background: var(--bg);
+  color: var(--text);
+  border-color: var(--border);
+}
+
+/* Slide counter */
+.counter {
+  position: fixed;
+  bottom: 2.25rem;
+  left: 2rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+  z-index: 100;
+}
+
+/* Emphasis */
+strong { font-weight: 700; }
+
+em { color: var(--accent); font-style: normal; font-weight: 600; }
+
+/* Responsive */
+@media (max-width: 900px) {
+  .slide { padding: 2.5rem 2rem; }
+  .slide--title h1 { font-size: 2.2rem; }
+  .slide--content h2, .slide--comparison h2, .slide--cards h2, .slide--exercise h2 { font-size: 1.6rem; }
+  .comparison-grid, .two-col { grid-template-columns: 1fr; }
+  .card-row { flex-direction: column; }
+  .pattern-grid { grid-template-columns: 1fr; }
+}
+
+/* Link styling */
+a {
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px solid var(--accent-light);
+  transition: border-color 0.2s;
+}
+
+a:hover {
+  border-bottom-color: var(--accent);
+}
+
+/* Rule cards */
+.rule-cards {
+  display: flex;
+  gap: 1.25rem;
+  margin-top: 1rem;
+}
+
+.rule-card {
+  flex: 1;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem;
+  box-shadow: var(--shadow);
+}
+
+.rule-card h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.rule-card .example-bad {
+  color: var(--warning);
+  font-size: 0.9rem;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.rule-card .example-good {
+  color: var(--success);
+  font-size: 0.9rem;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Trigger test table */
+.trigger-table {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-top: 1rem;
+}
+
+.trigger-col h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+}
+
+.trigger-col.should h3 { color: var(--success); }
+.trigger-col.shouldnt h3 { color: var(--warning); }
+
+.trigger-col ul {
+  list-style: none;
+  padding: 0;
+}
+
+.trigger-col li {
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 0.4rem;
+  border-radius: 6px;
+  font-size: 0.95rem;
+}
+
+.trigger-col.should li { background: var(--success-light); }
+.trigger-col.shouldnt li { background: var(--warning-light); }
+
+/* Fix cards */
+.fix-row {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.fix-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 1.5rem;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.25rem 1.5rem;
+}
+
+.fix-item .mistake {
+  font-size: 1rem;
+  color: var(--warning);
+  font-weight: 600;
+}
+
+.fix-item .fix {
+  font-size: 0.95rem;
+  color: var(--success);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Intro icon row */
+.icon-row {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progress"></div>
+
+<div class="deck" id="deck">
+
+<!-- ==================== A. OPENING (1-3) ==================== -->
+
+<!-- Slide 1: Title -->
+<div class="slide slide--title active" data-section="Opening">
+  <div class="icon-row">&#x1F680;</div>
+  <h1>Build Your First<br>Claude Skill</h1>
+  <p class="subtitle">No terminal required. We promise.</p>
+</div>
+
+<!-- Slide 2: Why This Matters -->
+<div class="slide slide--content" data-section="Opening">
+  <span class="section-label">Opening</span>
+  <h2>Why This Matters</h2>
+  <p style="font-size:1.3rem; line-height:1.7; max-width:700px;">
+    You keep explaining the same thing to Claude.<br>
+    <strong>Every. Single. Time.</strong>
+  </p>
+  <p style="margin-top:1.5rem; font-size:1.1rem; color:var(--text-secondary); max-width:650px; line-height:1.7;">
+    "Format it like last time." "Use our brand voice." "Follow the process we discussed yesterday."
+    Sound familiar? A <em>skill</em> <span class="gloss">(a small instruction file you give Claude)</span>
+    means you explain it once and Claude remembers it forever.
+  </p>
+</div>
+
+<!-- Slide 3: What You'll Walk Away With -->
+<div class="slide slide--content" data-section="Opening">
+  <span class="section-label">Opening</span>
+  <h2>What You'll Walk Away With</h2>
+  <ul class="checklist" style="margin-top:1rem;">
+    <li>A named skill folder structure</li>
+    <li>YAML frontmatter <span class="gloss">(the "nutrition label" for your skill)</span> with trigger phrases</li>
+    <li>Written step-by-step instructions Claude will follow</li>
+    <li>A workflow pattern that matches your task</li>
+    <li>A test plan to make sure it actually fires</li>
+    <li>A one-paragraph positioning statement</li>
+  </ul>
+</div>
+
+<!-- ==================== B. THE MENTAL MODEL (4-7) ==================== -->
+
+<!-- Slide 4: A Skill Is Just a Folder -->
+<div class="slide slide--content" data-section="The Mental Model">
+  <span class="section-label">Topic 1 &mdash; The Mental Model</span>
+  <h2>A Skill Is Just a Folder</h2>
+  <p style="font-size:1.15rem; line-height:1.7; max-width:700px;">
+    Let's cut through the noise. A skill is <strong>one folder</strong> with <strong>one file</strong> inside it called <code>SKILL.md</code>.
+  </p>
+  <p style="margin-top:1rem; font-size:1.1rem; line-height:1.7; max-width:700px;">
+    That file has two parts:
+  </p>
+  <ol style="margin-top:0.75rem; font-size:1.1rem; max-width:650px;">
+    <li>A <em>YAML header</em> <span class="gloss">("YAML" = a simple key-value format, like filling out a form)</span> that tells Claude <strong>when</strong> to use the skill</li>
+    <li>Markdown instructions that tell Claude <strong>how</strong> to do the work</li>
+  </ol>
+  <p style="margin-top:1.25rem; color:var(--text-secondary); font-size:1rem;">That's it. No code. No API keys. No terminal.</p>
+</div>
+
+<!-- Slide 5: The Kitchen Analogy -->
+<div class="slide slide--content" data-section="The Mental Model">
+  <span class="section-label">Topic 1 &mdash; The Mental Model</span>
+  <h2>The Kitchen Analogy</h2>
+  <div class="two-col" style="margin-top:1rem;">
+    <div>
+      <h3>MCP Servers = The Kitchen</h3>
+      <p style="font-size:1.05rem; line-height:1.7;">
+        A professional kitchen gives Claude access to tools, APIs, and data &mdash; the oven, the knives, the pantry.
+        <span class="gloss">(MCP = Model Context Protocol &mdash; a way to connect Claude to external services.)</span>
+      </p>
+    </div>
+    <div>
+      <h3>Skills = The Recipes</h3>
+      <p style="font-size:1.05rem; line-height:1.7;">
+        Step-by-step instructions on how to create something valuable with those tools. And here's the thing: <strong>plenty of amazing dishes don't need a professional kitchen.</strong>
+      </p>
+    </div>
+  </div>
+  <div class="callout" style="margin-top:1.5rem;">
+    <strong>Common Trap:</strong> "I don't have an MCP server, so skills aren't for me."
+    Nope &mdash; Category 1 skills (Document &amp; Asset Creation) work with just Claude's built-in capabilities. No MCP required.
+  </div>
+</div>
+
+<!-- Slide 6: Three Flavors of Skills -->
+<div class="slide slide--cards" data-section="The Mental Model">
+  <span class="section-label">Topic 1 &mdash; The Mental Model</span>
+  <h2>Three Flavors of Skills</h2>
+  <div class="card-row" style="margin-top:0.5rem;">
+    <div class="card">
+      <span class="card-icon">&#x1F4DD;</span>
+      <h3>Document &amp; Asset Creation</h3>
+      <p>Creating consistent output &mdash; reports, docs, designs &mdash; with no external tools needed. <strong>Start here.</strong></p>
+    </div>
+    <div class="card">
+      <span class="card-icon">&#x2699;&#xFE0F;</span>
+      <h3>Workflow Automation</h3>
+      <p>Multi-step processes that need a consistent methodology every time they run.</p>
+    </div>
+    <div class="card">
+      <span class="card-icon">&#x1F527;</span>
+      <h3>MCP Enhancement</h3>
+      <p>Adding workflow intelligence on top of an MCP server you already use.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 7: Your Turn -->
+<div class="slide slide--exercise" data-section="The Mental Model">
+  <span class="exercise-label">Your Turn</span>
+  <h2>What repetitive task do you wish Claude just <em>knew</em>?</h2>
+  <p style="max-width:650px;">
+    Think about something you do at least weekly where you wish Claude just "got it" without you having to explain every time. Be specific.
+  </p>
+  <p style="margin-top:1.5rem; max-width:650px;">
+    Now ask yourself: which of the three flavors does it fall into?
+  </p>
+  <ol style="margin-top:0.75rem;">
+    <li>Document &amp; Asset Creation</li>
+    <li>Workflow Automation</li>
+    <li>MCP Enhancement</li>
+  </ol>
+  <p style="margin-top:1.5rem; color:var(--text-secondary); font-size:0.95rem;">
+    Complete this sentence: "My skill will <strong>______</strong> when <strong>______</strong>, and the output will be <strong>______</strong>."
+  </p>
+</div>
+
+<!-- ==================== C. FOLDER STRUCTURE (8-11) ==================== -->
+
+<!-- Slide 8: Anatomy of a Skill Folder -->
+<div class="slide slide--content" data-section="Folder Structure">
+  <span class="section-label">Topic 2 &mdash; Folder Structure</span>
+  <h2>Anatomy of a Skill Folder</h2>
+  <div class="tree">
+    <span class="folder">your-skill-name/</span><br>
+    &nbsp;&nbsp;&#x251C;&#x2500;&#x2500; <span class="file required">SKILL.md</span> <span class="gloss">&nbsp;&larr; Required &mdash; this IS your skill</span><br>
+    &nbsp;&nbsp;&#x251C;&#x2500;&#x2500; <span class="folder optional">scripts/</span> <span class="gloss">&nbsp;&larr; Optional &mdash; executable code</span><br>
+    &nbsp;&nbsp;&#x251C;&#x2500;&#x2500; <span class="folder optional">references/</span> <span class="gloss">&nbsp;&larr; Optional &mdash; docs Claude can pull in</span><br>
+    &nbsp;&nbsp;&#x2514;&#x2500;&#x2500; <span class="folder optional">assets/</span> <span class="gloss">&nbsp;&larr; Optional &mdash; templates, icons, etc.</span>
+  </div>
+  <p style="margin-top:1rem; font-size:1.05rem; color:var(--text-secondary);">
+    One folder. One required file. Everything else is optional.
+  </p>
+</div>
+
+<!-- Slide 9: Rules That Will Bite You -->
+<div class="slide slide--content" data-section="Folder Structure">
+  <span class="section-label">Topic 2 &mdash; Folder Structure</span>
+  <h2>Rules That Will Bite You</h2>
+  <div class="rule-cards">
+    <div class="rule-card">
+      <h3>1. Exact filename</h3>
+      <p style="font-size:0.95rem; color:var(--text-secondary); margin-bottom:0.5rem;">The file must be named exactly <code>SKILL.md</code></p>
+      <div class="example-bad">&#x2717; skill.md &nbsp; SKILL.MD</div>
+      <div class="example-good" style="margin-top:0.25rem;">&#x2713; SKILL.md</div>
+    </div>
+    <div class="rule-card">
+      <h3>2. Kebab-case folders</h3>
+      <p style="font-size:0.95rem; color:var(--text-secondary); margin-bottom:0.5rem;"><span class="gloss">Kebab-case = words-on-a-skewer</span></p>
+      <div class="example-bad">&#x2717; My Cool Skill &nbsp; my_cool</div>
+      <div class="example-good" style="margin-top:0.25rem;">&#x2713; my-cool-skill</div>
+    </div>
+    <div class="rule-card">
+      <h3>3. No README.md</h3>
+      <p style="font-size:0.95rem; color:var(--text-secondary); margin-bottom:0.5rem;">All docs go in SKILL.md or references/</p>
+      <div class="example-bad">&#x2717; README.md inside skill</div>
+      <div class="example-good" style="margin-top:0.25rem;">&#x2713; references/guide.md</div>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 10: Progressive Disclosure -->
+<div class="slide slide--content" data-section="Folder Structure">
+  <span class="section-label">Topic 2 &mdash; Folder Structure</span>
+  <h2>Progressive Disclosure</h2>
+  <p style="margin-bottom:0.5rem; font-size:1.05rem;">Claude loads information in layers &mdash; only what it needs, when it needs it.</p>
+  <div class="levels">
+    <div class="level">
+      <span class="level-tag">Level 1</span>
+      <strong>YAML Frontmatter</strong> <span class="gloss">(the "nutrition label")</span>
+      <br><span style="font-size:0.95rem; color:var(--text-secondary);">Always loaded. Tiny. Just enough for Claude to decide: "Should I use this skill?"</span>
+    </div>
+    <div class="level">
+      <span class="level-tag">Level 2</span>
+      <strong>SKILL.md Body</strong>
+      <br><span style="font-size:0.95rem; color:var(--text-secondary);">Loaded when the skill triggers. Your main recipe &mdash; steps, examples, troubleshooting.</span>
+    </div>
+    <div class="level">
+      <span class="level-tag">Level 3</span>
+      <strong>references/ Files</strong>
+      <br><span style="font-size:0.95rem; color:var(--text-secondary);">Loaded on demand. Detailed docs, API specs, deep examples. Keep SKILL.md under 5,000 words.</span>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 11: Your Turn -->
+<div class="slide slide--exercise" data-section="Folder Structure">
+  <span class="exercise-label">Your Turn</span>
+  <h2>Sketch your folder</h2>
+  <p style="max-width:650px;">
+    Decide on your skill's folder name. Remember: <em>kebab-case</em> <span class="gloss">(words-on-a-skewer)</span>, descriptive, and it can't contain "claude" or "anthropic" (those are reserved).
+  </p>
+  <p style="margin-top:1.25rem; max-width:650px;">
+    Write out your complete folder structure. Will you need <code>scripts/</code>? <code>references/</code>? <code>assets/</code>?
+  </p>
+  <div class="tree" style="margin-top:1rem; max-width:400px;">
+    <span class="folder">_______________/</span><br>
+    &nbsp;&nbsp;&#x251C;&#x2500;&#x2500; <span class="file">SKILL.md</span><br>
+    &nbsp;&nbsp;&#x251C;&#x2500;&#x2500; <span class="folder optional">???</span><br>
+    &nbsp;&nbsp;&#x2514;&#x2500;&#x2500; <span class="folder optional">???</span>
+  </div>
+</div>
+
+<!-- ==================== D. YAML FRONTMATTER (12-16) ==================== -->
+
+<!-- Slide 12: The 5 Lines That Decide Everything -->
+<div class="slide slide--content" data-section="YAML Frontmatter">
+  <span class="section-label">Topic 3 &mdash; YAML Frontmatter</span>
+  <h2>The 5 Lines That Decide Everything</h2>
+  <p style="font-size:1.1rem; max-width:650px; margin-bottom:1rem;">
+    This is the single most important part of your skill. If your <em>frontmatter</em> <span class="gloss">(the "nutrition label" at the top of your file)</span> is wrong, Claude will never load your skill. Ever.
+  </p>
+  <pre><code><span class="cm">---</span>
+<span class="kw">name:</span> <span class="str">your-skill-name</span>
+<span class="kw">description:</span> <span class="str">What it does. Use when user asks to</span>
+  <span class="str">[specific phrases]. Key capabilities: [list].</span>
+<span class="cm">---</span></code></pre>
+  <p style="margin-top:0.75rem; font-size:1rem; color:var(--text-secondary);">
+    Under 1,024 characters. No angle brackets <code>&lt; &gt;</code>. Include the actual phrases users would say.
+  </p>
+</div>
+
+<!-- Slide 13: What Even Is YAML? -->
+<div class="slide slide--content" data-section="YAML Frontmatter">
+  <span class="section-label">Topic 3 &mdash; YAML Frontmatter</span>
+  <h2>What Even Is YAML?</h2>
+  <p style="font-size:1.15rem; max-width:650px; line-height:1.7;">
+    <em>YAML</em> is just a way to fill out a form with a text file.
+    Each line is a label followed by a colon and a value. That's it.
+  </p>
+  <div class="two-col" style="margin-top:1.5rem;">
+    <div>
+      <h3>Paper Form</h3>
+      <div style="background:var(--card-bg); border:1px solid var(--border); border-radius:10px; padding:1.25rem;">
+        <p style="font-size:1rem; margin-bottom:0.5rem;"><strong>Name:</strong> weekly-report-generator</p>
+        <p style="font-size:1rem;"><strong>Description:</strong> Creates weekly team status reports...</p>
+      </div>
+    </div>
+    <div>
+      <h3>YAML Version</h3>
+      <pre style="margin:0;"><code><span class="kw">name:</span> <span class="str">weekly-report-generator</span>
+<span class="kw">description:</span> <span class="str">Creates weekly team</span>
+  <span class="str">status reports...</span></code></pre>
+    </div>
+  </div>
+  <p style="margin-top:1rem; font-size:0.95rem; color:var(--text-secondary);">Same information. Different format. You've been doing this your whole life.</p>
+</div>
+
+<!-- Slide 14: The Description Formula -->
+<div class="slide slide--content" data-section="YAML Frontmatter">
+  <span class="section-label">Topic 3 &mdash; YAML Frontmatter</span>
+  <h2>The Description Formula</h2>
+  <p style="font-size:1.1rem; margin-bottom:0.5rem;">Your description has three ingredients:</p>
+  <div class="formula">
+    <div class="part">What it does</div>
+    <span class="plus">+</span>
+    <div class="part">When to use it</div>
+    <span class="plus">+</span>
+    <div class="part">Key capabilities</div>
+  </div>
+  <p style="margin-top:1.5rem; font-size:1.05rem; max-width:700px; line-height:1.7;">
+    The <strong>"When to use it"</strong> part is where you put <em>trigger phrases</em> &mdash; the exact words a user might type. Claude matches these phrases to decide if your skill is relevant.
+  </p>
+  <div class="callout">
+    <strong>Common Trap:</strong> Writing a description that sounds impressive to humans but means nothing to Claude's routing logic. Claude doesn't care about adjectives &mdash; it cares about matching phrases.
+  </div>
+</div>
+
+<!-- Slide 15: Good vs. Bad Descriptions -->
+<div class="slide slide--comparison" data-section="YAML Frontmatter">
+  <span class="section-label">Topic 3 &mdash; YAML Frontmatter</span>
+  <h2>Good vs. Bad Descriptions</h2>
+  <div class="comparison-grid">
+    <div class="comparison-col bad">
+      <h3>&#x2717; Don't write this</h3>
+      <pre style="background:transparent; color:var(--text); padding:0.75rem; border-radius:6px; border:1px solid #fca5a5;"><code>description: Helps with projects.</code></pre>
+      <p style="margin-top:0.75rem; font-size:0.95rem;">Too vague. Claude has zero idea when to trigger this.</p>
+      <pre style="background:transparent; color:var(--text); padding:0.75rem; border-radius:6px; border:1px solid #fca5a5; margin-top:0.75rem;"><code>description: Creates sophisticated
+  multi-page documentation systems.</code></pre>
+      <p style="margin-top:0.75rem; font-size:0.95rem;">Sounds impressive, means nothing. No trigger phrases.</p>
+    </div>
+    <div class="comparison-col good">
+      <h3>&#x2713; Write this instead</h3>
+      <pre style="background:transparent; color:var(--text); padding:0.75rem; border-radius:6px; border:1px solid #6ee7b7;"><code>description: Generates weekly
+  engineering team status reports
+  in markdown. Use when user says
+  "weekly report," "status update,"
+  "team standup summary," or
+  "engineering update."</code></pre>
+      <p style="margin-top:0.75rem; font-size:0.95rem;"><strong>What</strong> it does + <strong>When</strong> to use it + real <strong>trigger phrases</strong> users would actually type.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 16: Your Turn -->
+<div class="slide slide--exercise" data-section="YAML Frontmatter">
+  <span class="exercise-label">Your Turn</span>
+  <h2>Write your frontmatter</h2>
+  <p style="max-width:650px;">
+    Fill in both the <code>name</code> and <code>description</code> fields for your skill.
+    Your description <strong>must</strong> follow the formula:
+  </p>
+  <div class="formula" style="margin: 1rem 0;">
+    <div class="part">What it does</div>
+    <span class="plus">+</span>
+    <div class="part">When to use it</div>
+    <span class="plus">+</span>
+    <div class="part">Key capabilities</div>
+  </div>
+  <p style="margin-top:1rem; max-width:650px;">
+    Gut check: read your description back. If you were Claude and saw this, would you know <strong>exactly</strong> when to load this skill? What are three different ways a user might ask for this? Are all of them covered?
+  </p>
+</div>
+
+<!-- ==================== E. WRITING INSTRUCTIONS (17-20) ==================== -->
+
+<!-- Slide 17: The Recipe Card -->
+<div class="slide slide--content" data-section="Writing Instructions">
+  <span class="section-label">Topic 4 &mdash; Writing Instructions</span>
+  <h2>The Recipe Card</h2>
+  <p style="font-size:1.05rem; margin-bottom:1rem; max-width:650px;">After your YAML header, you write the actual instructions. Think of <code>SKILL.md</code> as a recipe card &mdash; not a cookbook.</p>
+  <pre><code><span class="cm">---</span>
+<span class="kw">name:</span> <span class="str">your-skill</span>
+<span class="kw">description:</span> <span class="str">[your description]</span>
+<span class="cm">---</span>
+
+<span class="kw"># Your Skill Name</span>
+
+<span class="kw">## Instructions</span>
+<span class="kw">### Step 1:</span> <span class="str">[First Major Step]</span>
+Clear explanation of what happens.
+
+<span class="kw">## Examples</span>
+<span class="kw">### Example 1:</span> <span class="str">[Common scenario]</span>
+User says: "..."  &rarr;  Claude does: ...
+
+<span class="kw">## Troubleshooting</span>
+<span class="kw">### Error:</span> <span class="str">[Common problem]</span>
+Cause &rarr; Solution</code></pre>
+</div>
+
+<!-- Slide 18: What Good Instructions Look Like -->
+<div class="slide slide--comparison" data-section="Writing Instructions">
+  <span class="section-label">Topic 4 &mdash; Writing Instructions</span>
+  <h2>Specific Beats Vague</h2>
+  <div class="comparison-grid">
+    <div class="comparison-col bad">
+      <h3>&#x2717; Vague</h3>
+      <p style="font-size:1.05rem; line-height:1.7; padding:0.5rem 0;">
+        "Step 2: Process the data appropriately."
+      </p>
+      <p style="font-size:0.9rem; margin-top:0.5rem;">
+        That's not an instruction, that's a wish. Claude doesn't know what "appropriately" means for <em>your</em> workflow.
+      </p>
+    </div>
+    <div class="comparison-col good">
+      <h3>&#x2713; Specific</h3>
+      <p style="font-size:1.05rem; line-height:1.7; padding:0.5rem 0;">
+        "Step 2: Extract all rows where <code>status = 'active'</code> and group by <code>department</code>. Output a markdown table with columns: Department, Count, % of Total."
+      </p>
+      <p style="font-size:0.9rem; margin-top:0.5rem;">
+        Claude knows <em>exactly</em> what to do. No guessing.
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 19: The New-Team-Member Test -->
+<div class="slide slide--content" data-section="Writing Instructions">
+  <span class="section-label">Topic 4 &mdash; Writing Instructions</span>
+  <h2>The New-Team-Member Test</h2>
+  <p style="font-size:1.25rem; max-width:650px; line-height:1.7; margin-bottom:1.5rem;">
+    If a new team member on their first day would have to <em>guess</em> what you mean, you haven't been specific enough.
+  </p>
+  <p style="font-size:1.1rem; max-width:650px; line-height:1.7; color:var(--text-secondary);">
+    Read each step of your instructions and ask: "Would a smart person who has never seen my workflow know exactly what to do here?"
+  </p>
+  <p style="font-size:1.1rem; max-width:650px; line-height:1.7; color:var(--text-secondary); margin-top:1rem;">
+    If the answer is "they'd probably figure it out" &mdash; rewrite it. <strong>Probably</strong> is the enemy of <strong>consistently.</strong>
+  </p>
+</div>
+
+<!-- Slide 20: Your Turn -->
+<div class="slide slide--exercise" data-section="Writing Instructions">
+  <span class="exercise-label">Your Turn</span>
+  <h2>Draft your instructions</h2>
+  <p style="max-width:650px;">Write the <strong>Instructions</strong> section for your skill. Include at least:</p>
+  <ul style="margin-top:0.75rem; max-width:600px;">
+    <li><strong>3 clear steps</strong> in your workflow</li>
+    <li><strong>1 example scenario</strong> showing a user request and expected behavior</li>
+    <li><strong>1 troubleshooting entry</strong> for the most common failure mode</li>
+  </ul>
+  <p style="margin-top:1.25rem; max-width:650px; color:var(--text-secondary);">
+    Write the actual instructions, not an outline. This is what Claude will follow.
+    Apply the New-Team-Member Test to every step.
+  </p>
+</div>
+
+<!-- ==================== F. WORKFLOW PATTERNS (21-23) ==================== -->
+
+<!-- Slide 21: Five Patterns That Work -->
+<div class="slide slide--content" data-section="Workflow Patterns">
+  <span class="section-label">Topic 5 &mdash; Workflow Patterns</span>
+  <h2>Five Patterns That Work</h2>
+  <div class="pattern-grid">
+    <div class="pattern-card">
+      <h3>1. Sequential</h3>
+      <p>Steps in a specific order. Step 1 feeds Step 2 feeds Step 3.</p>
+      <div class="mini-flow">A <span class="arrow">&rarr;</span> B <span class="arrow">&rarr;</span> C <span class="arrow">&rarr;</span> D</div>
+    </div>
+    <div class="pattern-card">
+      <h3>2. Multi-MCP Coordination</h3>
+      <p>Workflows spanning multiple services.</p>
+      <div class="mini-flow">Figma <span class="arrow">&rarr;</span> Drive <span class="arrow">&rarr;</span> Linear <span class="arrow">&rarr;</span> Slack</div>
+    </div>
+    <div class="pattern-card">
+      <h3>3. Iterative Refinement</h3>
+      <p>Output improves through repeated quality checks.</p>
+      <div class="mini-flow">Draft <span class="arrow">&rarr;</span> Check <span class="arrow">&rarr;</span> Refine <span class="arrow">&circlearrowright;</span></div>
+    </div>
+    <div class="pattern-card">
+      <h3>4. Context-Aware Selection</h3>
+      <p>Same outcome, different tools depending on context.</p>
+      <div class="mini-flow">If X <span class="arrow">&rarr;</span> Tool A &nbsp;|&nbsp; If Y <span class="arrow">&rarr;</span> Tool B</div>
+    </div>
+  </div>
+  <div class="pattern-card" style="margin-top:1.25rem; max-width:calc(50% - 0.625rem);">
+    <h3>5. Domain-Specific Intelligence</h3>
+    <p>Specialized knowledge beyond tool access. E.g., compliance checks baked in.</p>
+    <div class="mini-flow">Input <span class="arrow">&rarr;</span> Domain Rules <span class="arrow">&rarr;</span> Validated Output</div>
+  </div>
+</div>
+
+<!-- Slide 22: Pick Your Pattern -->
+<div class="slide slide--content" data-section="Workflow Patterns">
+  <span class="section-label">Topic 5 &mdash; Workflow Patterns</span>
+  <h2>Pick Your Pattern</h2>
+  <p style="font-size:1.1rem; max-width:650px; margin-bottom:1.5rem;">
+    For most non-developer skills, you'll use one of these two:
+  </p>
+  <div class="two-col">
+    <div>
+      <h3>Sequential</h3>
+      <p style="font-size:1.05rem; line-height:1.7;">
+        Each step depends on the previous one. Great for processes with a clear start and end.
+      </p>
+      <p style="font-size:0.95rem; color:var(--text-secondary); margin-top:0.5rem;">
+        <strong>Example:</strong> Customer onboarding &mdash; create account &rarr; setup payment &rarr; send welcome email.
+      </p>
+    </div>
+    <div>
+      <h3>Iterative Refinement</h3>
+      <p style="font-size:1.05rem; line-height:1.7;">
+        Output gets better through loops. Great for anything where quality matters more than speed.
+      </p>
+      <p style="font-size:0.95rem; color:var(--text-secondary); margin-top:0.5rem;">
+        <strong>Example:</strong> Report generation &mdash; draft &rarr; check against criteria &rarr; refine &rarr; repeat until passing.
+      </p>
+    </div>
+  </div>
+  <div class="callout" style="margin-top:1.5rem;">
+    <strong>Common Trap:</strong> Saying "Iterative Refinement" but writing sequential instructions with no quality-check loop. If there's no "check and redo" step, you're actually Sequential. That's fine &mdash; just be honest about it.
+  </div>
+</div>
+
+<!-- Slide 23: Your Turn -->
+<div class="slide slide--exercise" data-section="Workflow Patterns">
+  <span class="exercise-label">Your Turn</span>
+  <h2>Match your pattern</h2>
+  <p style="max-width:650px;">
+    Look at the instructions you just wrote. Which pattern do they follow?
+  </p>
+  <ul style="margin-top:1rem; max-width:600px;">
+    <li>Are your steps in a fixed order where each depends on the last? &rarr; <strong>Sequential</strong></li>
+    <li>Is there a "check quality and redo if needed" loop? &rarr; <strong>Iterative</strong></li>
+    <li>Does the same task route to different tools depending on context? &rarr; <strong>Context-Aware</strong></li>
+  </ul>
+  <p style="margin-top:1.25rem; max-width:650px; color:var(--text-secondary);">
+    Now check: does your SKILL.md actually <em>reflect</em> the pattern you chose? Can you point to the structural element that proves it?
+  </p>
+</div>
+
+<!-- ==================== G. TESTING (24-27) ==================== -->
+
+<!-- Slide 24: If You Don't Test, Nothing Works -->
+<div class="slide slide--content" data-section="Testing">
+  <span class="section-label">Topic 6 &mdash; Testing</span>
+  <h2>If You Don't Test, Nothing Works</h2>
+  <p style="font-size:1.2rem; max-width:650px; line-height:1.7;">
+    You built a skill. You uploaded it. You ask Claude for help and&hellip; <strong>nothing happens.</strong> It never triggers. Now what?
+  </p>
+  <p style="font-size:1.1rem; max-width:650px; line-height:1.7; margin-top:1.25rem; color:var(--text-secondary);">
+    You should have written your test plan <em>before</em> uploading. The most important test is simple:
+    <strong>does the skill actually fire when it should?</strong>
+  </p>
+  <p style="font-size:1.1rem; max-width:650px; line-height:1.7; margin-top:1rem;">
+    This is called a <em>triggering test</em> <span class="gloss">(checking whether Claude recognizes your skill as relevant for a given request)</span>.
+  </p>
+</div>
+
+<!-- Slide 25: The Trigger Test Plan -->
+<div class="slide slide--content" data-section="Testing">
+  <span class="section-label">Topic 6 &mdash; Testing</span>
+  <h2>The Trigger Test Plan</h2>
+  <div class="trigger-table">
+    <div class="trigger-col should">
+      <h3>&#x2713; Should Trigger (5+ queries)</h3>
+      <ul>
+        <li>"Help me set up a new ProjectHub workspace"</li>
+        <li>"I need to create a project in ProjectHub"</li>
+        <li>"Initialize a ProjectHub project for Q4 planning"</li>
+        <li>"Set up our team workspace for the new quarter"</li>
+        <li>"Can you make me a ProjectHub project?"</li>
+      </ul>
+    </div>
+    <div class="trigger-col shouldnt">
+      <h3>&#x2717; Should NOT Trigger (3+ queries)</h3>
+      <ul>
+        <li>"What's the weather in San Francisco?"</li>
+        <li>"Help me write Python code"</li>
+        <li>"Create a spreadsheet for tracking expenses"</li>
+      </ul>
+    </div>
+  </div>
+  <p style="margin-top:1.25rem; font-size:0.95rem; color:var(--text-secondary);">
+    The hardest test case: a query that's <strong>close</strong> to your skill's domain but shouldn't trigger. That's the most valuable one.
+  </p>
+</div>
+
+<!-- Slide 26: The Debug Trick -->
+<div class="slide slide--content" data-section="Testing">
+  <span class="section-label">Topic 6 &mdash; Testing</span>
+  <h2>The Debug Trick</h2>
+  <p style="font-size:1.2rem; max-width:650px; line-height:1.7;">
+    After uploading your skill, ask Claude:
+  </p>
+  <pre style="max-width:600px;"><code>"When would you use the <span class="str">[your-skill-name]</span> skill?"</code></pre>
+  <p style="font-size:1.1rem; max-width:650px; line-height:1.7; margin-top:1rem;">
+    Claude will quote the description back to you. If what it quotes doesn't match your intent, <strong>your description is wrong.</strong> Fix it.
+  </p>
+  <div class="callout" style="margin-top:1.25rem;">
+    <strong>Also watch for over-triggering.</strong> If your skill loads for irrelevant queries, add negative triggers:
+    <br><code style="font-size:0.9rem;">Do NOT use for simple data exploration (use data-viz skill instead).</code>
+  </div>
+</div>
+
+<!-- Slide 27: Your Turn -->
+<div class="slide slide--exercise" data-section="Testing">
+  <span class="exercise-label">Your Turn</span>
+  <h2>Write your trigger test plan</h2>
+  <p style="max-width:650px;">
+    Write at least <strong>5 "should trigger"</strong> queries and <strong>3 "should NOT trigger"</strong> queries for your skill. They must be realistic &mdash; things actual users would type.
+  </p>
+  <ul style="margin-top:1rem; max-width:600px; font-size:1.05rem;">
+    <li>Include the obvious request</li>
+    <li>A paraphrased version</li>
+    <li>A casual version</li>
+    <li>A version using different terminology</li>
+    <li>One that's slightly adjacent but still in scope</li>
+  </ul>
+  <p style="margin-top:1rem; max-width:650px; color:var(--text-secondary);">
+    Then cross-check: would <strong>all five</strong> trigger queries match something in your description? If not, update your description.
+  </p>
+</div>
+
+<!-- ==================== H. COMMON MISTAKES (28-29) ==================== -->
+
+<!-- Slide 28: Three Mistakes Everyone Makes -->
+<div class="slide slide--cards" data-section="Common Mistakes">
+  <span class="section-label">Topic 7 &mdash; Common Mistakes</span>
+  <h2>Three Mistakes Everyone Makes</h2>
+  <div class="card-row" style="margin-top:0.5rem;">
+    <div class="card" style="border-top:3px solid var(--warning);">
+      <span class="card-icon">1</span>
+      <h3>Vague Description</h3>
+      <p>"Helps with projects." Claude has no idea when to trigger this. It's the skill equivalent of a resume that says "hard worker."</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--warning);">
+      <span class="card-icon">2</span>
+      <h3>Stuffing SKILL.md</h3>
+      <p>Dumping your entire API docs into one file. Like reading the entire cookbook before making toast. Use <code>references/</code> instead.</p>
+    </div>
+    <div class="card" style="border-top:3px solid var(--warning);">
+      <span class="card-icon">3</span>
+      <h3>Skipping Tests</h3>
+      <p>You built it, uploaded it, and... nothing happens. It never triggers. You should have written your test plan <em>before</em> uploading.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 29: The Fix Is Always the Same -->
+<div class="slide slide--content" data-section="Common Mistakes">
+  <span class="section-label">Topic 7 &mdash; Common Mistakes</span>
+  <h2>The Fix Is Always the Same</h2>
+  <div class="fix-row">
+    <div class="fix-item">
+      <div>
+        <div class="mistake">Vague description</div>
+        <p style="font-size:0.95rem; color:var(--text-secondary); margin-top:0.25rem;">"Helps with projects" tells Claude nothing.</p>
+      </div>
+      <div class="fix">&rarr; Apply the formula: What + When + Capabilities</div>
+    </div>
+    <div class="fix-item">
+      <div>
+        <div class="mistake">SKILL.md over 5,000 words</div>
+        <p style="font-size:0.95rem; color:var(--text-secondary); margin-top:0.25rem;">Everything crammed into one file.</p>
+      </div>
+      <div class="fix">&rarr; Move detailed docs to references/</div>
+    </div>
+    <div class="fix-item">
+      <div>
+        <div class="mistake">No triggering tests</div>
+        <p style="font-size:0.95rem; color:var(--text-secondary); margin-top:0.25rem;">Uploaded and hoped for the best.</p>
+      </div>
+      <div class="fix">&rarr; Write 5 should + 3 shouldn't queries first</div>
+    </div>
+  </div>
+  <p style="margin-top:1.5rem; font-size:1.05rem; max-width:600px; color:var(--text-secondary);">
+    The pattern: every failure comes from being too vague or too lazy to test. Be specific. Verify. Iterate.
+  </p>
+</div>
+
+<!-- ==================== I. DISTRIBUTION (30-31) ==================== -->
+
+<!-- Slide 30: Sharing Your Skill -->
+<div class="slide slide--content" data-section="Distribution">
+  <span class="section-label">Topic 8 &mdash; Distribution</span>
+  <h2>Sharing Your Skill</h2>
+  <div class="two-col" style="margin-top:1rem;">
+    <div>
+      <h3>For Personal Use</h3>
+      <ol style="font-size:1.05rem; line-height:1.8;">
+        <li>Create or download the skill folder</li>
+        <li>Zip it up</li>
+        <li>Upload to Claude.ai via<br><strong>Settings &rarr; Capabilities &rarr; Skills</strong></li>
+      </ol>
+      <p style="font-size:0.9rem; color:var(--text-secondary); margin-top:0.75rem;">
+        Or place it in Claude Code's skills directory if you use the CLI.
+        <span class="gloss">(Okay, maybe a tiny bit of terminal. But just drag-and-drop.)</span>
+      </p>
+    </div>
+    <div>
+      <h3>For Sharing with Others</h3>
+      <ol style="font-size:1.05rem; line-height:1.8;">
+        <li>Host on GitHub with a clear README <span class="gloss">(for humans &mdash; separate from SKILL.md)</span></li>
+        <li>Include example usage &amp; screenshots</li>
+        <li>Write an installation guide</li>
+      </ol>
+      <p style="font-size:0.9rem; color:var(--text-secondary); margin-top:0.75rem;">
+        If you have an MCP server, link your skill from its documentation.
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- Slide 31: Outcomes, Not Features -->
+<div class="slide slide--comparison" data-section="Distribution">
+  <span class="section-label">Topic 8 &mdash; Distribution</span>
+  <h2>Outcomes, Not Features</h2>
+  <p style="margin-bottom:1rem; font-size:1.05rem;">When you describe your skill to other people, flip the lens.</p>
+  <div class="comparison-grid">
+    <div class="comparison-col bad">
+      <h3>&#x2717; Feature-focused</h3>
+      <p style="font-size:1.05rem; line-height:1.7;">
+        "The ProjectHub skill is a folder containing YAML frontmatter and Markdown instructions that calls our MCP server tools."
+      </p>
+      <p style="font-size:0.9rem; margin-top:0.75rem;">
+        This describes what it <em>is</em>. Nobody cares.
+      </p>
+    </div>
+    <div class="comparison-col good">
+      <h3>&#x2713; Outcome-focused</h3>
+      <p style="font-size:1.05rem; line-height:1.7;">
+        "The ProjectHub skill enables teams to set up complete project workspaces in seconds &mdash; including pages, databases, and templates &mdash; instead of spending 30 minutes on manual setup."
+      </p>
+      <p style="font-size:0.9rem; margin-top:0.75rem;">
+        This describes what it <em>achieves</em>. That's what people care about.
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== J. CLOSING (32) ==================== -->
+
+<!-- Slide 32: You Just Built a Skill -->
+<div class="slide slide--title" data-section="Closing">
+  <h1 style="font-size:2.5rem;">You Just Built a Skill</h1>
+  <p class="subtitle" style="margin-bottom:1.5rem; max-width:550px;">
+    Most people who read about skills never build one. You did. Here's what you have:
+  </p>
+  <ul class="checklist" style="text-align:left; display:inline-block;">
+    <li class="checked">A named skill folder structure</li>
+    <li class="checked">YAML frontmatter with trigger phrases</li>
+    <li class="checked">Step-by-step instructions</li>
+    <li class="checked">A workflow pattern</li>
+    <li class="checked">A trigger test plan</li>
+    <li class="checked">An outcome-focused positioning statement</li>
+  </ul>
+  <p style="margin-top:2rem; font-size:1.1rem; color:var(--text-secondary); max-width:550px;">
+    Your first version is the starting line, not the finish line.
+    Skills are living documents &mdash; upload it, test it, iterate.
+    <strong>Ship it.</strong>
+  </p>
+  <p style="margin-top:1.25rem;">
+    <a href="https://docs.anthropic.com/en/docs/build-with-claude/skills" target="_blank" rel="noopener">Read the Complete Guide to Building Skills &rarr;</a>
+  </p>
+</div>
+
+</div><!-- .deck -->
+
+<!-- Navigation -->
+<div class="counter" id="counter">1 / 32</div>
+<div class="nav">
+  <button id="prevBtn" onclick="prevSlide()" disabled aria-label="Previous slide">&#x2190;</button>
+  <button id="nextBtn" onclick="nextSlide()" aria-label="Next slide">&#x2192;</button>
+</div>
+
+<script>
+(function() {
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  let current = 0;
+
+  const progress = document.getElementById('progress');
+  const counter = document.getElementById('counter');
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+
+  function goToSlide(n) {
+    if (n < 0 || n >= total) return;
+    slides[current].classList.remove('active');
+    current = n;
+    slides[current].classList.add('active');
+    update();
+  }
+
+  function nextSlide() { goToSlide(current + 1); }
+  function prevSlide() { goToSlide(current - 1); }
+
+  function update() {
+    progress.style.width = ((current + 1) / total * 100) + '%';
+    counter.textContent = (current + 1) + ' / ' + total;
+    prevBtn.disabled = current === 0;
+    nextBtn.disabled = current === total - 1;
+    history.replaceState(null, '', '#slide-' + (current + 1));
+  }
+
+  // Keyboard navigation
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); nextSlide(); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); prevSlide(); }
+    if (e.key === 'ArrowDown') { e.preventDefault(); nextSlide(); }
+    if (e.key === 'ArrowUp') { e.preventDefault(); prevSlide(); }
+  });
+
+  // Touch/swipe support
+  let touchStartX = 0;
+  let touchStartY = 0;
+
+  document.addEventListener('touchstart', function(e) {
+    touchStartX = e.changedTouches[0].screenX;
+    touchStartY = e.changedTouches[0].screenY;
+  }, { passive: true });
+
+  document.addEventListener('touchend', function(e) {
+    const dx = e.changedTouches[0].screenX - touchStartX;
+    const dy = e.changedTouches[0].screenY - touchStartY;
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
+      if (dx < 0) nextSlide();
+      else prevSlide();
+    }
+  }, { passive: true });
+
+  // Hash navigation
+  function loadFromHash() {
+    const match = location.hash.match(/^#slide-(\d+)$/);
+    if (match) {
+      const n = parseInt(match[1], 10) - 1;
+      if (n >= 0 && n < total) goToSlide(n);
+    }
+  }
+
+  window.addEventListener('hashchange', loadFromHash);
+  loadFromHash();
+  update();
+
+  // Expose for button onclick
+  window.goToSlide = goToSlide;
+  window.nextSlide = nextSlide;
+  window.prevSlide = prevSlide;
+})();
+</script>
+</body>
+</html>
